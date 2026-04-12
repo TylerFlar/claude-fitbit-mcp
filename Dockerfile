@@ -10,5 +10,6 @@ ENV MCP_TRANSPORT=http
 ENV MCP_PORT=3100
 ENV TOKEN_DIR=/data/tokens
 EXPOSE 3100
+VOLUME ["/data/tokens"]
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
