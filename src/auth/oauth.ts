@@ -13,6 +13,7 @@ import type { Credentials } from "../types.js";
 export async function performOAuthFlow(
   clientId: string,
   clientSecret: string,
+  options: { openBrowser?: boolean } = {},
 ): Promise<Credentials> {
   const params = new URLSearchParams({
     response_type: "code",
@@ -69,10 +70,10 @@ export async function performOAuthFlow(
     }
 
     server.listen(OAUTH_REDIRECT_PORT, () => {
-      process.stderr.write(
-        `\nOpening browser for Fitbit authorization...\nIf it doesn't open, visit:\n${authUrl}\n\n`
-      );
-      open(authUrl).catch(() => {});
+      process.stderr.write(`\nVisit this URL to authorize Fitbit:\n${authUrl}\n\n`);
+      if (options.openBrowser !== false) {
+        open(authUrl).catch(() => {});
+      }
     });
 
     server.on("error", (err) => {

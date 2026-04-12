@@ -3,7 +3,9 @@ import path from "node:path";
 
 const homedir = os.homedir();
 
-export const CONFIG_DIR = path.join(homedir, ".config", "claude-fitbit-mcp");
+export const CONFIG_DIR = process.env.TOKEN_DIR
+  ? path.resolve(process.env.TOKEN_DIR)
+  : path.join(homedir, ".config", "claude-fitbit-mcp");
 export const TOKEN_FILE = path.join(CONFIG_DIR, "tokens.json");
 export const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
