@@ -33,7 +33,7 @@ if (process.env.MCP_TRANSPORT === "http") {
         transport.onclose = () => {
           if (transport.sessionId) transports.delete(transport.sessionId);
         };
-        await server.connect(transport);
+        try { await server.close(); } catch {} await server.connect(transport);
         await transport.handleRequest(req, res);
       } else {
         const transport = transports.get(sessionId);
@@ -58,5 +58,5 @@ if (process.env.MCP_TRANSPORT === "http") {
     "@modelcontextprotocol/sdk/server/stdio.js"
   );
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  try { await server.close(); } catch {} await server.connect(transport);
 }
