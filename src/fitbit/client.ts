@@ -184,6 +184,58 @@ export async function getSkinTemperature(date?: string): Promise<any> {
   return fitbitGet(`/1/user/-/temp/skin/date/${d}.json`);
 }
 
+// --- Nutrition / Food Logging ---
+
+export async function getFoodLog(date?: string): Promise<any> {
+  const d = date ?? today();
+  const data = await fitbitGet(`/1/user/-/foods/log/date/${d}.json`);
+  return {
+    date: d,
+    foods: (data.foods ?? []).map((f: any) => ({
+      meal: f.loggedFood?.mealTypeId,
+      name: f.loggedFood?.name,
+      brand: f.loggedFood?.brand,
+      amount: f.loggedFood?.amount,
+      unit: f.loggedFood?.unit?.name,
+      calories: f.loggedFood?.calories,
+      nutritionalValues: f.nutritionalValues,
+    })),
+    summary: data.summary,
+  };
+}
+
+export async function getNutritionSummary(date?: string): Promise<any> {
+  const d = date ?? today();
+  const data = await fitbitGet(`/1/user/-/foods/log/date/${d}.json`);
+  return {
+    date: d,
+    ...data.summary,
+  };
+}
+
+export async function getNutritionTimeseries(nutrient: string, startDate: string, endDate: string): Promise<any> {
+  return fitbitGet(`/1/user/-/foods/log/${nutrient}/date/${startDate}/${endDate}.json`);
+}
+
+export async function getWaterLog(date?: string): Promise<any> {
+  const d = date ?? today();
+  return fitbitGet(`/1/user/-/foods/log/water/date/${d}.json`);
+}
+
+// --- Activity Goals & Timeseries ---
+
+export async function getActivityGoals(period: string): Promise<any> {
+  return fitbitGet(`/1/user/-/activities/goals/${period}.json`);
+}
+
+export async function getActivityTimeseries(resource: string, startDate: string, endDate: string): Promise<any> {
+  return fitbitGet(`/1/user/-/activities/${resource}/date/${startDate}/${endDate}.json`);
+}
+
+export async function getAZMTimeseries(startDate: string, endDate: string): Promise<any> {
+  return fitbitGet(`/1/user/-/activities/active-zone-minutes/date/${startDate}/${endDate}.json`);
+}
+
 // --- Daily Summary (combines multiple endpoints) ---
 
 export async function getDailySummary(date?: string): Promise<any> {

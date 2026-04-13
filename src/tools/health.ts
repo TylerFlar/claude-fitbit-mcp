@@ -13,6 +13,13 @@ import {
   getBreathingRate,
   getSkinTemperature,
   getDailySummary,
+  getFoodLog,
+  getNutritionSummary,
+  getNutritionTimeseries,
+  getWaterLog,
+  getActivityGoals,
+  getActivityTimeseries,
+  getAZMTimeseries,
 } from "../fitbit/client.js";
 
 function toolResult(data: unknown) {
@@ -155,6 +162,97 @@ export function registerHealthTools(server: McpServer): void {
     { date: dateParam },
     async ({ date }) => {
       try { return toolResult(await getSkinTemperature(date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  // --- Nutrition / Food Logging ---
+
+  server.tool(
+    "fitbit_food_log",
+    "Get food diary for a date: meals (breakfast/lunch/dinner/snacks), foods logged, calories and macros per entry, and daily totals.",
+    { date: dateParam },
+    async ({ date }) => {
+      try { return toolResult(await getFoodLog(date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  server.tool(
+    "fitbit_nutrition_summary",
+    "Get daily nutrition totals: calories, carbs, fat, protein, fiber, sodium, water.",
+    { date: dateParam },
+    async ({ date }) => {
+      try { return toolResult(await getNutritionSummary(date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  server.tool(
+    "fitbit_nutrition_timeseries",
+    "Get daily values for a nutrient over a date range (e.g. calories, protein, water).",
+    {
+      nutrient: z.enum(["caloriesIn", "water", "protein", "fat", "carbs", "fiber", "sodium"]).describe("Nutrient to query"),
+      start_date: z.string().describe("Start date (YYYY-MM-DD)"),
+      end_date: z.string().describe("End date (YYYY-MM-DD)"),
+    },
+    async ({ nutrient, start_date, end_date }) => {
+      try { return toolResult(await getNutritionTimeseries(nutrient, start_date, end_date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  server.tool(
+    "fitbit_water",
+    "Get water intake for a date (ml/oz, individual entries and total).",
+    { date: dateParam },
+    async ({ date }) => {
+      try { return toolResult(await getWaterLog(date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  // --- Activity Goals & Timeseries ---
+
+  server.tool(
+    "fitbit_activity_goals",
+    "Get activity goals (steps, distance, calories, active minutes, floors) for daily or weekly period.",
+    {
+      period: z.enum(["daily", "weekly"]).describe("Goal period: daily or weekly"),
+    },
+    async ({ period }) => {
+      try { return toolResult(await getActivityGoals(period)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  server.tool(
+    "fitbit_activity_timeseries",
+    "Get daily values for an activity resource over a date range (max 30 days). E.g. steps, calories, active minutes trends.",
+    {
+      resource: z.enum([
+        "steps", "distance", "calories",
+        "minutesSedentary", "minutesLightlyActive", "minutesFairlyActive", "minutesVeryActive",
+        "floors", "elevation",
+      ]).describe("Activity resource to query"),
+      start_date: z.string().describe("Start date (YYYY-MM-DD)"),
+      end_date: z.string().describe("End date (YYYY-MM-DD, max 30 days from start)"),
+    },
+    async ({ resource, start_date, end_date }) => {
+      try { return toolResult(await getActivityTimeseries(resource, start_date, end_date)); }
+      catch (e) { return toolError(e); }
+    },
+  );
+
+  server.tool(
+    "fitbit_azm_timeseries",
+    "Get Active Zone Minutes per day over a date range.",
+    {
+      start_date: z.string().describe("Start date (YYYY-MM-DD)"),
+      end_date: z.string().describe("End date (YYYY-MM-DD)"),
+    },
+    async ({ start_date, end_date }) => {
+      try { return toolResult(await getAZMTimeseries(start_date, end_date)); }
       catch (e) { return toolError(e); }
     },
   );
