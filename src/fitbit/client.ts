@@ -227,6 +227,7 @@ export async function getFoodLog(date?: string): Promise<any> {
   return {
     date: d,
     foods: (data.foods ?? []).map((f: any) => ({
+      logId: f.logId,
       meal: f.loggedFood?.mealTypeId,
       name: f.loggedFood?.name,
       brand: f.loggedFood?.brand,
