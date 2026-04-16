@@ -1,8 +1,10 @@
 # @tasque/fitbit-mcp
 
-MCP server for read-only access to Fitbit health data via the Fitbit Web API.
+MCP server for reading and writing Fitbit health data via the Fitbit Web API.
 
 ## Tools
+
+### Read
 
 | Tool | Description |
 |------|-------------|
@@ -21,6 +23,38 @@ MCP server for read-only access to Fitbit health data via the Fitbit Web API.
 | `fitbit_spo2` | Blood oxygen (SpO2) data |
 | `fitbit_breathing_rate` | Breathing rate data |
 | `fitbit_skin_temperature` | Skin temperature variation data |
+| `fitbit_food_log` | Food diary for a date |
+| `fitbit_nutrition_summary` | Daily nutrition totals |
+| `fitbit_nutrition_timeseries` | Nutrient values over a date range |
+| `fitbit_water` | Water intake for a date |
+| `fitbit_activity_goals` | Daily/weekly activity goals |
+| `fitbit_activity_timeseries` | Activity resource over a date range |
+| `fitbit_azm_timeseries` | Active Zone Minutes over a date range |
+
+### Write
+
+Writes require the Fitbit app to have write permission enabled (in addition to read). The OAuth scope names are unchanged (`nutrition`, `activity`, `weight`, `sleep`), but **existing tokens minted before enabling write are still read-only** — run `fitbit_disconnect` then `fitbit_connect` once after upgrading the app permission.
+
+| Tool | Description |
+|------|-------------|
+| `fitbit_log_food` | Log a food entry (by foodId or foodName + calories). Uses mealTypeId 1=Breakfast, 2=MorningSnack, 3=Lunch, 4=AfternoonSnack, 5=Dinner, 7=Anytime |
+| `fitbit_delete_food_log` | Delete a food log entry by id |
+| `fitbit_log_water` | Log water intake (ml / fl oz / cup) |
+| `fitbit_delete_water_log` | Delete a water log entry by id |
+| `fitbit_create_food` | Create a custom food in the user's food database |
+| `fitbit_delete_food` | Delete a custom food by id |
+| `fitbit_set_food_goal` | Set daily calorie goal (calories or intensity) |
+| `fitbit_set_water_goal` | Set daily water goal |
+| `fitbit_log_activity` | Log a completed workout (duration in milliseconds) |
+| `fitbit_delete_activity_log` | Delete an activity log entry by id |
+| `fitbit_set_activity_goal` | Set daily/weekly goal (steps, distance, calories, floors, active minutes, AZM) |
+| `fitbit_log_weight` | Log a weight measurement |
+| `fitbit_delete_weight_log` | Delete a weight log entry by id |
+| `fitbit_log_body_fat` | Log a body fat percentage |
+| `fitbit_delete_body_fat_log` | Delete a body fat log entry by id |
+| `fitbit_set_weight_goal` | Set start/target weight goal |
+| `fitbit_log_sleep` | Log a sleep session (duration in milliseconds) |
+| `fitbit_delete_sleep_log` | Delete a sleep log entry by id |
 
 ## Environment Variables
 

@@ -41,6 +41,41 @@ async function fitbitGet(path: string): Promise<any> {
   return res.json();
 }
 
+async function fitbitPost(path: string, params: Record<string, string | number | undefined>): Promise<any> {
+  const token = await getAccessToken();
+  const body = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null) body.set(k, String(v));
+  }
+  const res = await fetch(`${FITBIT_API_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Fitbit API error (${res.status}): ${text}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : { ok: true, status: res.status };
+}
+
+async function fitbitDelete(path: string): Promise<any> {
+  const token = await getAccessToken();
+  const res = await fetch(`${FITBIT_API_BASE}${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Fitbit API error (${res.status}): ${text}`);
+  }
+  return { ok: true, status: res.status };
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -261,4 +296,195 @@ export async function getDailySummary(date?: string): Promise<any> {
       zones: heartRate.zones,
     } : null,
   };
+}
+
+// ============================================================
+// WRITE ENDPOINTS
+// ============================================================
+
+// --- Food / Nutrition writes ---
+
+export interface LogFoodInput {
+  foodId?: number | string;
+  foodName?: string;
+  brandName?: string;
+  calories?: number;
+  mealTypeId: number;
+  unitId: number;
+  amount: number;
+  date?: string;
+  favorite?: boolean;
+}
+
+export async function logFood(input: LogFoodInput): Promise<any> {
+  if (!input.foodId && !input.foodName) {
+    throw new Error("Provide either foodId (from Fitbit food DB) or foodName (free-text).");
+  }
+  if (input.foodName && input.calories === undefined) {
+    throw new Error("When logging by foodName, calories is required.");
+  }
+  return fitbitPost("/1/user/-/foods/log.json", {
+    foodId: input.foodId,
+    foodName: input.foodName,
+    brandName: input.brandName,
+    calories: input.calories,
+    mealTypeId: input.mealTypeId,
+    unitId: input.unitId,
+    amount: input.amount,
+    date: input.date ?? today(),
+    favorite: input.favorite !== undefined ? String(input.favorite) : undefined,
+  });
+}
+
+export async function deleteFoodLog(foodLogId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/foods/log/${foodLogId}.json`);
+}
+
+export async function logWater(amount: number, unit?: "ml" | "fl oz" | "cup", date?: string): Promise<any> {
+  return fitbitPost("/1/user/-/foods/log/water.json", {
+    amount,
+    unit,
+    date: date ?? today(),
+  });
+}
+
+export async function deleteWaterLog(waterLogId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/foods/log/water/${waterLogId}.json`);
+}
+
+export interface CreateCustomFoodInput {
+  name: string;
+  defaultFoodMeasurementUnitId: number;
+  defaultServingSize: number;
+  calories: number;
+  formType?: "LIQUID" | "DRY";
+  description?: string;
+}
+
+export async function createCustomFood(input: CreateCustomFoodInput): Promise<any> {
+  return fitbitPost("/1/user/-/foods.json", {
+    name: input.name,
+    defaultFoodMeasurementUnitId: input.defaultFoodMeasurementUnitId,
+    defaultServingSize: input.defaultServingSize,
+    calories: input.calories,
+    formType: input.formType,
+    description: input.description,
+  });
+}
+
+export async function deleteCustomFood(foodId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/foods/${foodId}.json`);
+}
+
+export interface SetFoodGoalInput {
+  calories?: number;
+  intensity?: "MAINTENANCE" | "EASIER" | "MEDIUM" | "KINDAHARD" | "HARDER";
+  personalized?: boolean;
+}
+
+export async function setFoodGoal(input: SetFoodGoalInput): Promise<any> {
+  if (input.calories === undefined && !input.intensity) {
+    throw new Error("Provide either calories or intensity.");
+  }
+  return fitbitPost("/1/user/-/foods/log/goal.json", {
+    calories: input.calories,
+    intensity: input.intensity,
+    personalized: input.personalized !== undefined ? String(input.personalized) : undefined,
+  });
+}
+
+export async function setWaterGoal(target: number): Promise<any> {
+  return fitbitPost("/1/user/-/foods/log/water/goal.json", { target });
+}
+
+// --- Activity writes ---
+
+export interface LogActivityInput {
+  activityId?: number;
+  activityName?: string;
+  manualCalories?: number;
+  startTime: string;
+  durationMillis: number;
+  date?: string;
+  distance?: number;
+  distanceUnit?: string;
+}
+
+export async function logActivity(input: LogActivityInput): Promise<any> {
+  if (!input.activityId && !input.activityName) {
+    throw new Error("Provide either activityId or activityName.");
+  }
+  if (input.activityName && input.manualCalories === undefined) {
+    throw new Error("When logging by activityName, manualCalories is required.");
+  }
+  return fitbitPost("/1/user/-/activities.json", {
+    activityId: input.activityId,
+    activityName: input.activityName,
+    manualCalories: input.manualCalories,
+    startTime: input.startTime,
+    durationMillis: input.durationMillis,
+    date: input.date ?? today(),
+    distance: input.distance,
+    distanceUnit: input.distanceUnit,
+  });
+}
+
+export async function deleteActivityLog(activityLogId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/activities/${activityLogId}.json`);
+}
+
+export async function setActivityGoal(
+  period: "daily" | "weekly",
+  type: "activeMinutes" | "activeZoneMinutes" | "caloriesOut" | "distance" | "floors" | "steps",
+  value: number,
+): Promise<any> {
+  return fitbitPost(`/1/user/-/activities/goals/${period}.json`, { type, value });
+}
+
+// --- Body / weight writes ---
+
+export async function logWeight(weight: number, date?: string, time?: string): Promise<any> {
+  return fitbitPost("/1/user/-/body/log/weight.json", {
+    weight,
+    date: date ?? today(),
+    time,
+  });
+}
+
+export async function deleteWeightLog(weightLogId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/body/log/weight/${weightLogId}.json`);
+}
+
+export async function logBodyFat(fat: number, date?: string, time?: string): Promise<any> {
+  return fitbitPost("/1/user/-/body/log/fat.json", {
+    fat,
+    date: date ?? today(),
+    time,
+  });
+}
+
+export async function deleteBodyFatLog(fatLogId: string | number): Promise<any> {
+  return fitbitDelete(`/1/user/-/body/log/fat/${fatLogId}.json`);
+}
+
+export async function setWeightGoal(startDate: string, startWeight: number, weight: number): Promise<any> {
+  return fitbitPost("/1/user/-/body/log/weight/goal.json", {
+    startDate,
+    startWeight,
+    weight,
+  });
+}
+
+// --- Sleep writes ---
+
+export async function logSleep(startTime: string, duration: number, date?: string): Promise<any> {
+  return fitbitPost("/1.2/user/-/sleep.json", {
+    startTime,
+    duration,
+    date: date ?? today(),
+  });
+}
+
+export async function deleteSleepLog(logId: string | number): Promise<any> {
+  return fitbitDelete(`/1.2/user/-/sleep/${logId}.json`);
 }
